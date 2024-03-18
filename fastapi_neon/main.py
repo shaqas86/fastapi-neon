@@ -1,7 +1,6 @@
 from fastapi import  FastAPI
 from typing import Union,Optional
 from fastapi_neon import settings
-from contextlib import asyncontextmanger
 from sqlmodel import Field,Session,SQLModel,create_engine,select
 
 class Todo(SQLModel, table=True):
@@ -19,13 +18,13 @@ engine = create_engine(Connection_string,connect_args= {"sslmode":"require"}, po
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
-@asyncontextmanger
-async def lifespan(app:FastAPI):
-    print("creating tables..")
-    create_db_and_tables()
-    yield
 
-app= FastAPI(lifespan=lifespan)
+app= FastAPI()
+
+@app.get("/health/")
+def health():
+    create_db_and_tables()
+    return {"status": "ok"}
 
 @app.get("/")
 def read_root():

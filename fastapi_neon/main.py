@@ -1,4 +1,4 @@
-from fastapi import  FastAPI
+from fastapi import FastAPI, HTTPException
 from typing import Union,Optional
 from fastapi_neon import settings
 from sqlmodel import Field,Session,SQLModel,create_engine,select
@@ -29,7 +29,7 @@ def health():
 @app.get("/")
 def read_root():
     return{ "Hello": "World"}
-
+# endpoint for data insertion in DB
 @app.post("/todos/")
 def create_todo(todo:Todo):
     with Session(engine) as session:
@@ -37,16 +37,40 @@ def create_todo(todo:Todo):
         session.commit()
         session.refresh(todo)
         return todo
-
-@app.get("/todos/")
-def read_todos():
+# endpoint for data updation in DB
+@app.put("/todos/{todo_id}")
+def update_todo(todo_id: int, todo_update: Todo):
     with Session(engine) as session:
-        todos=session.exec(select(Todo)).all()
-        return todos
-# app=FastAPI()
-# @app.get("/")
-# def read_root():
-#     return{"hello": "world"}
+        # Fetch todo item from database
+        todo = session.get(Todo, todo_id)
+        if not todo:
+            raise HTTPException(status_code=404, detail="Todo item not found")
+        # Update todo item's content if provided
+        if todo_update.content:
+            todo.content = todo_update.content
+        session.commit()
+        session.refresh(todo)
+        return todo
+# endpoint for data  deletion from DB
+@app.delete("/todos/{todo_id}")
+def delete_todo(todo_id: int):
+    with Session(engine) as session:
+        # Fetch todo item from database
+        todo = session.get(Todo, todo_id)
+        if not todo:
+            raise HTTPException(status_code=404, detail="Todo item not found") 
+        session.delete(todo)
+        session.commit()
+        return {"message": "Todo item deleted successfully"}
+
+
+
+# @app.get("/todos/")
+# def read_todos():
+#     with Session(engine) as session:
+#         todos=session.exec(select(Todo)).all()
+#         return todos
+            
 
 # @app.get("/items/{item_id}")
 # def read_item(item_id: int, q: Union[str, None] = None):
